@@ -1,0 +1,75 @@
+B-树结构：
+	typedef Struct BTNode{
+	   int keyNum;              //关键字个数
+	   struct BTNode *parent;   //指向双亲结点
+	   KeyType  key[m+1];       //0号单元未用
+	   struct BTNode  *ptr[m+1];//子树指针向量
+	   Record  *recptr[m+1];    //记录指针，零号单元未用
+	}BTNode,*BTree;
+	
+	typedef Struct{
+	   BTNode *pt;  //指向找到的节点
+	   int i;       //1...m,在结点中的关键字序号
+	   int tag;	//1:找到，0：未找到	
+       	}Result;
+
+
+简要描述B-树的查找操作过程：
+ 	Result SearchBTree(BTree T,KeyType K){
+	   p=T;  q=NULL;  found=FALSE;  i=0;	//p指向待查结点，q指向p的双亲	   
+	   while(p&&!found){
+	      i=Search(p,k);			//在p->key[1...keyNum]查找，i使得p->key[i] <= k<p->key[i+1]
+	      if(i>0&&p->key[i]==k) found=TRUE;
+	      	else{q=p;p=p->ptr[i];}
+	   }	
+	   if(found) return(p,i,1);
+		else return(q,i,0);		
+
+	}
+
+	1.关键字个数加一就是叶子结点个数。
+	2.除根结点外每个非终端结点至少有[m/2]个子树。
+	3.通过1，2可以建立l和N的关系，求得从根结点出发到关键字所在结点的路径上涉及的与N有关节点数的最大值，N是关键字个数。
+
+
+
+加入：由于每个结点的关键字个数不能超过m(m为阶数)，所以会插入后有m个关键字的结点*p应该分成两个结点。
+      *p m,A0,(K1,A1),(K2,A2),(K3,A3),......,(Km,Km)
+      分解为：
+		*p    [m/2]-1 A0,(K1,A1),(K2,A2),......(k([m/2]-1),A([m/2]-1))
+		*p.   m-[m/2] A[m/2],(K([m/2]+1),A([m/2]+1)),......,(Km,Km)  
+		K[m/2]和*p.一起插入到*p的双亲当中。
+伪代码：
+	Status InsertBTree(BTree &T,KeyType k,BTree q,int i){
+	 //在m阶B-树上的结点*q的key[i]与key[i+1]之间插入关键字K.
+	 //若引起的结点过大，则沿双亲链进行必要的结点分裂调整，使T仍是m阶B-树
+	  x=k,ap=NULL;finished=FALSE;
+	  while(q&&!finished)
+	     Insert(q,i,x,ap);  //将x和ap分别插入到q->key[i+1]和q->ptr[i+1]
+	     if(q->KeyNum<m) finished=TRUE;
+	     else{
+		s=[m/2];split(q,s,ap);x=q->key[s];
+		//将q->key[s+1,....,m],q->ptr[s,.....,m],q->recptr[s+1,..,m]移入到新节点ap中
+		q=q->parent;
+		if(q) i=Search(q,x);
+		}
+	     if(!finished)
+		NewRoot(T,q,x,ap);
+	     return ok;
+	}
+
+删除：由于每个结点的关键字个数不能小于[m/2]-1(m为阶数)，则删除的时候会发生合并。
+	1）若被删除关键字的结点关键字数目不小于[m/2]，则只需要删除多余的指针。
+	2）若被删除关键字的结点关键字数目等于[m/2]-1，删了之后少了一个关键字，而右兄弟（左）大于[m/2]-1
+	   则把其兄弟最小值（最大值）放到双亲，然后把双亲最小值（最大值）放到被删所在关键字所在结点。
+	3）若被删除关键字的结点和其兄弟均等于关键字数目等于[m/2]-1，假设它存在右兄弟，则把剩余信息和双亲结点中的
+	   关键字一起放入到右兄弟当中（否则左兄弟）。并以此类推。
+
+
+	   
+
+
+
+
+
+
